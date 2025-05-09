@@ -1,55 +1,65 @@
 package services
 
 import (
-	"sync"
+	"errors"
+	"gorm.io/gorm"
 	"task-manager-app/internal/models"
 )
 
+var ErrTaskNotFound = errors.New("task not found")
+
 type TaskService struct {
-	mu     sync.Mutex
-	tasks  []models.Task
-	nextID int
+	db *gorm.DB
 }
 
-func NewTaskService() *TaskService {
-	return &TaskService{
-		tasks:  []models.Task{},
-		nextID: 1,
+func NewTaskService(db *gorm.DB) *TaskService {
+	return &TaskService{db: db}
+}
+
+func (s *TaskService) GetAllTasks() ([]models.Task, error) {
+	var tasks []models.Task
+	if err := s.db.Find(&tasks).Error; err != nil {
+		return nil, err
 	}
+	return tasks, nil
 }
 
-func (s *TaskService) GetAllTasks() []models.Task {
-	return s.tasks
+func (s *TaskService) CreateTask(task models.Task) (models.Task, error) {
+	if err := s.db.Create(&task).Error; err != nil {
+		return models.Task{}, err
+	}
+	return task, nil
 }
 
-func (s *TaskService) CreateTask(task models.Task) models.Task {
-	task.ID = s.nextID
-	s.nextID++
-	s.tasks = append(s.tasks, task)
-	return task
-}
-
-func (s *TaskService) UpdateTask(id int, updatedTask models.Task) (models.Task, bool) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, task := range s.tasks {
-		if task.ID == id {
-			updatedTask.ID = id
-			s.tasks[i] = updatedTask
-			return updatedTask, true
+// UpdateTask updates task by ID. Returns ErrTaskNotFound if not found.
+func (s *TaskService) UpdateTask(id uint, updatedTask models.Task) (models.Task, error) {
+	var task models.Task
+	if err := s.db.First(&task, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return models.Task{}, ErrTaskNotFound
 		}
+		return models.Task{}, err
 	}
-	return models.Task{}, false
+	// Update fields
+	task.Title = updatedTask.Title
+	task.Description = updatedTask.Description
+	task.Status = updatedTask.Status
+	task.DueDate = updatedTask.DueDate
+
+	if err := s.db.Save(&task).Error; err != nil {
+		return models.Task{}, err
+	}
+	return task, nil
 }
 
-func (s *TaskService) DeleteTask(id int) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, task := range s.tasks {
-		if task.ID == id {
-			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
-			return true
-		}
+// DeleteTask deletes task by ID. Returns ErrTaskNotFound if not found.
+func (s *TaskService) DeleteTask(id uint) error {
+	result := s.db.Delete(&models.Task{}, id)
+	if result.Error != nil {
+		return result.Error
 	}
-	return false
+	if result.RowsAffected == 0 {
+		return ErrTaskNotFound
+	}
+	return nil
 }
