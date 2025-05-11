@@ -13,7 +13,7 @@ function AppContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showRegister, setShowRegister] = useState(false);
-  
+  const [filter, setFilter] = useState('All');
 
   useEffect(() => {
     if (user) loadTasks();
@@ -24,25 +24,19 @@ function AppContent() {
     setError('');
     try {
       const data = await fetchTasks();
-      setTasks(data); // Set the tasks state
+      setTasks(data);
     } catch (err) {
       setError('Failed to fetch tasks');
     } finally {
       setLoading(false);
     }
   };
-  
-  
-  
-
-  
 
   const handleAdd = async (task) => {
     setLoading(true);
     setError('');
     try {
       const response = await createTask(task);
-      console.log('Response from createTask:', response);
       if (response && response.data) {
         const newTask = response.data;
         setTasks(prev => Array.isArray(prev) ? [...prev, newTask] : [newTask]);
@@ -50,33 +44,30 @@ function AppContent() {
         setError('Failed to add task. Invalid response from server.');
       }
     } catch (err) {
-      console.error(err);
       setError('Failed to add task. Please try again.');
     } finally {
       setLoading(false);
     }
-  };   
-  
+  };
+
   const handleUpdate = async (task) => {
     setLoading(true);
     setError('');
     try {
       const response = await updateTask(editingTask.id, task);
       if (response && response.data) {
-        const updated = response.data; // Adjust based on your API response structure
+        const updated = response.data;
         setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
         setEditingTask(null);
       } else {
         setError('Failed to update task. Invalid response from server.');
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError('Failed to update task');
     } finally {
       setLoading(false);
     }
   };
-  
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete task?')) return;
@@ -91,6 +82,8 @@ function AppContent() {
       setLoading(false);
     }
   };
+
+  const filteredTasks = filter === 'All' ? tasks : tasks.filter(task => task.status === filter);
 
   if (!user) {
     return (
@@ -113,15 +106,29 @@ function AppContent() {
   return (
     <div style={{ maxWidth: 600, margin: "2rem auto", padding: "1rem" }}>
       <h1>Welcome, {user.username}</h1>
-      <button onClick={logout}>Logout</button>
+      <button onClick={logout} style={{ marginBottom: '1rem' }}>Logout</button>
       {error && <p style={{ color: "red" }}>{error}</p>}
       {loading && <p>Loading...</p>}
+
+      {/* Filter dropdown */}
+      <div style={{ marginBottom: '1rem' }}>
+        <label>
+          Filter Tasks:{' '}
+          <select value={filter} onChange={e => setFilter(e.target.value)}>
+            <option value="All">All</option>
+            <option value="Pending">Pending</option>
+            <option value="In-Progress">In-Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </label>
+      </div>
+
       <TaskForm
         onSubmit={editingTask ? handleUpdate : handleAdd}
         initialTask={editingTask}
         onCancel={() => setEditingTask(null)}
       />
-      <TaskList tasks={tasks} onEdit={setEditingTask} onDelete={handleDelete} />
+      <TaskList tasks={filteredTasks} onEdit={setEditingTask} onDelete={handleDelete} />
       <hr />
     </div>
   );
