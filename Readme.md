@@ -9,7 +9,8 @@ Built with **Golang** using **Gin** framework for the backend API, and **React**
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)  
+- [Project Overview](#project-overview) 
+- [Project Demo](#project-demo)
 - [Features](#features)  
 - [Technology Stack](#technology-stack)  
 - [Backend Architecture](#backend-architecture)  
@@ -31,6 +32,13 @@ This project demonstrates ability to build scalable,
 secure full-stack applications with clean code architecture, modular design, and modern best practices.
 
 ---
+---
+
+## Project Demo
+
+[![Watch the video](https://img.youtube.com/vi/-cuphB-7Ss8/0.jpg)](https://youtu.be/-cuphB-7Ss8)
+
+Watch this 7-minute video where I walk through the features, architecture, and usage of the Task Manager App.
 
 ## Features
 
