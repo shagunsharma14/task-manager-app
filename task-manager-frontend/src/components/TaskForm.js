@@ -22,19 +22,30 @@ const TaskForm = ({ onSubmit, initialTask, onCancel }) => {
     setError(null);
   }, [initialTask]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       setError('Title and Description are required');
       return;
     }
     setError(null);
-    onSubmit({
-      title: title.trim(),
-      description: description.trim(),
-      status,
-      due_date: dueDate || null,
-    });
+    try {
+      await onSubmit({
+        title: title.trim(),
+        description: description.trim(),
+        status,
+        due_date: dueDate || null,
+      });
+      // Clear form if adding new task
+      if (!initialTask) {
+        setTitle('');
+        setDescription('');
+        setStatus('Pending');
+        setDueDate('');
+      }
+    } catch {
+      setError('Failed to submit task. Please try again.');
+    }
   };
 
   return (
